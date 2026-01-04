@@ -1,9 +1,9 @@
 ﻿@page "/"
-@using BrigittaBlazor.Utils
 @using BanchoSharp
 @using BanchoSharp.Exceptions
 @using BanchoSharp.Interfaces
 @using BrigittaBlazor.Auth
+@using BrigittaBlazor.Utils
 
 @inject IBanchoClient Client
 @inject ILogger<Index> Logger
@@ -33,9 +33,12 @@
                                       HelperText="osu! Username" @ref="username"/>
                         <MudTextField T="string" Label="osu! IRC Password" Required="true" RequiredError="IRC password is required."
                                       HelperText="osu! IRC Password" InputType="InputType.Password" @ref="password"/>
+                        <div class="d-flex justify-end">
+                            <MudCheckBox @bind-Checked="_rememberPassword">Remember password</MudCheckBox>        
+                        </div>
                         <div class="d-flex">
                             <MudButton Variant="Variant.Outlined" Color="Color.Info" Class="ml-0"
-                                       Href="https://osu.ppy.sh/p/irc">
+                                       Href="https://osu.ppy.sh/p/irc" Target="_blank" Rel="noopener noreferrer">
                                 Get IRC Password
                             </MudButton>
                             <MudButton Variant="Variant.Filled" Color="Color.Success" Class="ml-auto"
@@ -44,7 +47,6 @@
                             </MudButton>
                         </div>
                     </MudForm>
-                    <MudAlert Severity="Severity.Info">Your IRC login information is not saved.</MudAlert>
                 </MudPaper>
             </MudItem>
             <MudItem xs="12" sm="6">
@@ -86,6 +88,7 @@
     bool success;
     MudTextField<string> username;
     MudTextField<string> password;
+    private bool _rememberPassword;
     MudForm form;
 
     // ReSharper disable once FieldCanBeMadeReadOnly.Local
@@ -129,6 +132,26 @@
             // ignored
         }
 #endif
+
+        try
+        {
+            var rawCredentials = (await File.ReadAllTextAsync("cfg")).Split("|");
+            if (rawCredentials.Length > 0)
+            {
+                await username.SetText(rawCredentials[0]);
+                await password.SetText(PasswordUtils.Decrypt(rawCredentials[1]));
+                _rememberPassword = true;
+            }
+        }
+        catch (FileNotFoundException)
+        {
+            Logger.LogDebug("Unable to load credentials. Continuing without it.");
+        }
+        catch (Exception e)
+        {
+            Logger.LogError(e.Message);
+            Snackbar.Add("Unable to load credentials. Continuing without it.", Severity.Error);
+        }
     }
 
     public async Task OnSubmit()
@@ -139,7 +162,18 @@
         Logger.LogInformation($"Username: {username.Text}");
 
         Client.OnAuthenticated += async () => { await brigittaAuth.UpdateAuthenticationStateAsync(Client); };
+        Client.OnAuthenticated += async () =>
+        {
+            if (!_rememberPassword) return;
+            var encryptedPassword = PasswordUtils.Encrypt(password.Text);
+            await File.WriteAllTextAsync(
+                "cfg",
+                $"{username.Text}|{encryptedPassword}"
+            );
 
+            Logger.LogInformation("Stored credentials in: cfg");
+        };
+        
         try
         {
             await Client.ConnectAsync();
@@ -147,6 +181,11 @@
         catch (IrcClientNotAuthenticatedException)
         {
             form.Reset();
+        }
+        catch (OperationCanceledException e)
+        {
+            Logger.LogError(e.InnerException?.Message);
+            Snackbar.Add("Unable to save credentials. Continuing without it.", Severity.Error);
         }
     }
 
