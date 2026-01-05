@@ -98,7 +98,7 @@
     {
         if (!EventRegistrationTracker.HasRegisteredIndexLocationListener)
         {
-            NavigationManager.LocationChanged += (_, args) => Logger.LogDebug($"Location changed: {args.Location}");
+            NavigationManager.LocationChanged += (_, args) => Logger.LogDebug("Location changed: {Location}", args.Location);
             EventRegistrationTracker.HasRegisteredIndexLocationListener = true;
         }
 
@@ -135,7 +135,7 @@
 
         try
         {
-            var rawCredentials = (await File.ReadAllTextAsync("cfg")).Split("|");
+            var rawCredentials = (await File.ReadAllTextAsync(Environment.UserName)).Split("|");
             if (rawCredentials.Length > 0)
             {
                 await username.SetText(rawCredentials[0]);
@@ -149,7 +149,7 @@
         }
         catch (Exception e)
         {
-            Logger.LogError(e.Message);
+            Logger.LogError(e, "An error occurred: {ErrorMessage}", e.Message);
             Snackbar.Add("Unable to load credentials. Continuing without it.", Severity.Error);
         }
     }
@@ -159,19 +159,28 @@
         var brigittaAuth = (BrigittaAuthStateProvider)AuthStateProvider;
         Client.ClientConfig.Credentials = new IrcCredentials(username.Text, password.Text);
 
-        Logger.LogInformation($"Username: {username.Text}");
+        Logger.LogInformation("Username: {Username}", username.Text);
 
         Client.OnAuthenticated += async () => { await brigittaAuth.UpdateAuthenticationStateAsync(Client); };
         Client.OnAuthenticated += async () =>
         {
             if (!_rememberPassword) return;
-            var encryptedPassword = PasswordUtils.Encrypt(password.Text);
-            await File.WriteAllTextAsync(
-                "cfg",
-                $"{username.Text}|{encryptedPassword}"
-            );
+            try
+            {
+                var encryptedPassword = PasswordUtils.Encrypt(password.Text);
+                var filename = Environment.UserName;
+                await File.WriteAllTextAsync(
+                    filename,
+                    $"{username.Text}|{encryptedPassword}"
+                );
 
-            Logger.LogInformation("Stored credentials in: cfg");
+                Logger.LogInformation("Stored credentials in: {Filename}", filename);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, "An error occurred: {ErrorMessage}", e.Message);
+                Snackbar.Add("Unable to save credentials. Continuing without it.", Severity.Error);
+            }
         };
         
         try
@@ -182,11 +191,5 @@
         {
             form.Reset();
         }
-        catch (OperationCanceledException e)
-        {
-            Logger.LogError(e.InnerException?.Message);
-            Snackbar.Add("Unable to save credentials. Continuing without it.", Severity.Error);
-        }
     }
-
 }
