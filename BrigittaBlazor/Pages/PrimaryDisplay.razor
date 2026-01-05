@@ -1,12 +1,12 @@
 @page "/primarydisplay"
-@using BrigittaBlazor.Extensions
-@using BrigittaBlazor.Settings
+@using System.Collections.Immutable
 @using BanchoSharp.Interfaces
 @using BanchoSharp.Multiplayer
-@using BrigittaBlazor.Utils
+@using BrigittaBlazor.Extensions
+@using BrigittaBlazor.Settings
 @using BrigittaBlazor.Shared.Components
 @using BrigittaBlazor.Shared.Components.MultiplayerLobby
-@using System.Collections.Immutable
+@using BrigittaBlazor.Utils
 @implements IDisposable
 
 @attribute [Authorize]
@@ -59,7 +59,10 @@
                 </MudItem>
                 <MudItem xs="12">
                     <MudPaper Class="pa-2">
-                        <LobbyButtonsPanel CurrentLobby="@_currentlySelectedLobby"/>
+                        <LobbyButtonsPanel
+                            CurrentLobby="@_currentlySelectedLobby"
+                            @*LobbyTimers reference*@
+                            Timers=@StateManager.GetOrCreateTimers(_currentlySelectedLobby.Name) />
                     </MudPaper>
                 </MudItem>
                 <MudItem xs="12">
@@ -79,7 +82,7 @@
 </MudGrid>
 
 @code {
-        @*Member Variables*@
+    @*Member Variables*@
     private IChatChannel? _currentlySelectedChannel;
     private readonly Dictionary<string, Delegate> _eventListeners = new(); // Key: alert's name, Value: the event handler
 
@@ -391,9 +394,9 @@
         Client.OnChannelJoined += async channel =>
         {
             /**
-             * Because of the way audio alerts work, they need to be reloaded whenever
-             * a multiplayer channel is added.
-             */
+            * Because of the way audio alerts work, they need to be reloaded whenever
+            * a multiplayer channel is added.
+            */
             if (channel.ChannelName.StartsWith("#mp_"))
             {
                 foreach (var alert in StateManager.AudioAlerts.ToImmutableList())
@@ -426,7 +429,11 @@
             lobby.OnMatchStarted += () => Snackbar.Add($"Match started: {lobby.Name}", Severity.Info);
             lobby.OnMatchFinished += () => Snackbar.Add($"Match finished: {lobby.Name}", Severity.Info);
             lobby.OnMatchAborted += () => Snackbar.Add($"Match aborted: {lobby.Name}", Severity.Warning);
-            lobby.OnClosed += () => Snackbar.Add($"Lobby closed: {lobby.Name}", Severity.Info);
+            lobby.OnClosed += () =>
+            {
+                Snackbar.Add($"Lobby closed: {lobby.Name}", Severity.Info);
+                StateManager.DeleteLobbyTimers(lobby.Name);
+            };
             lobby.OnStateChanged += async () =>
             {
                 await InvokeAsync(StateHasChanged);

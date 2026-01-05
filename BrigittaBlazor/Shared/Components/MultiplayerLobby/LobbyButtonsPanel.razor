@@ -1,23 +1,24 @@
 @using BanchoSharp.Interfaces
+@using BrigittaBlazor.Models
 <MudGrid Spacing="2">
     <MudItem>
-        <MudNumericField @bind-Value="@_mpTimerValue" Label="Timer Seconds" Variant="Variant.Outlined" Min="0" Max="600" Step="30"/>
+        <MudNumericField @bind-Value="@Timers.MpTimer" Label="Timer Seconds" Variant="Variant.Outlined" Min="0" Max="600" Step="30"/>
     </MudItem>
     <MudItem>
-        <MudNumericField @bind-Value="@_mpMatchTimerValue" Label="Match Start Timer Seconds" Variant="Variant.Outlined" Min="5" Max="60" Step="5"/>
+        <MudNumericField @bind-Value="@Timers.MatchTimer" Label="Match Start Timer Seconds" Variant="Variant.Outlined" Min="5" Max="60" Step="5"/>
     </MudItem>
 </MudGrid>
 
 <MudGrid Spacing="2">
     <MudItem>
         <MudTooltip Text="Start a timer">
-            <MudIconButton Color="Color.Inherit" OnClick="@(() => CurrentLobby.SetTimerAsync(_mpTimerValue))"
+            <MudIconButton Color="Color.Inherit" OnClick="@(() => CurrentLobby.SetTimerAsync(Timers.MpTimer))"
                            Icon="@Icons.Material.Filled.HourglassBottom" Size="Size.Medium"/>
         </MudTooltip>
     </MudItem>
     <MudItem>
         <MudTooltip Text="Start a match timer">
-            <MudIconButton Color="Color.Error" OnClick="@(() => CurrentLobby.SetMatchStartTimerAsync(_mpMatchTimerValue))"
+            <MudIconButton Color="Color.Error" OnClick="@(() => CurrentLobby.SetMatchStartTimerAsync(Timers.MatchTimer))"
                            Icon="@Icons.Material.Filled.HourglassBottom" Size="Size.Medium"/>
         </MudTooltip>
     </MudItem>
@@ -65,7 +66,7 @@
 
 @code {
     [Parameter]
-    public IMultiplayerLobby? CurrentLobby { get; set; }
-    private int _mpTimerValue = 120;
-    private int _mpMatchTimerValue = 5;
+    public required IMultiplayerLobby CurrentLobby { get; set; }
+    [Parameter]
+    public LobbyTimers Timers { get; set; }
 }

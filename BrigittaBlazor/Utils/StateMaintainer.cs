@@ -1,4 +1,5 @@
-﻿using BrigittaBlazor.Settings;
+﻿using BrigittaBlazor.Models;
+using BrigittaBlazor.Settings;
 
 namespace BrigittaBlazor.Utils;
 
@@ -31,6 +32,8 @@ public class StateMaintainer
 		};
 	}
 
+	// Audio Alert state
+	
 	public List<UserAudioAlert> AudioAlerts { get; } = new();
 	public event EventHandler<UserAudioAlert> OnAudioAlertCreated;
 	public event EventHandler<UserAudioAlert> OnAudioAlertUpdated;
@@ -39,7 +42,7 @@ public class StateMaintainer
 	public void AddAudioAlert(UserAudioAlert audioAlert)
 	{
 		AudioAlerts.Add(audioAlert);
-		OnAudioAlertCreated?.Invoke(this, audioAlert);
+		OnAudioAlertCreated.Invoke(this, audioAlert);
 	}
 
 	public void UpdateAudioAlert(UserAudioAlert audioAlert)
@@ -49,7 +52,7 @@ public class StateMaintainer
 		{
 			AudioAlerts.Remove(existingAlert);
 			AudioAlerts.Add(audioAlert);
-			OnAudioAlertUpdated?.Invoke(this, audioAlert);
+			OnAudioAlertUpdated.Invoke(this, audioAlert);
 		}
 	}
 
@@ -57,11 +60,27 @@ public class StateMaintainer
 	{
 		if (AudioAlerts.Remove(audioAlert))
 		{
-			OnAudioAlertDeleted?.Invoke(this, audioAlert);
+			OnAudioAlertDeleted.Invoke(this, audioAlert);
 		}
 	}
 	
-	// TODO: Add state such as Referee-view timer settings, etc.
+	// Lobby timers state
+
+	private Dictionary<string, LobbyTimers> _timers = new();
+
+	public LobbyTimers GetOrCreateTimers(string lobbyName)
+	{
+		if (!_timers.ContainsKey(lobbyName))
+			_timers.Add(lobbyName, new LobbyTimers());
+		return _timers[lobbyName];
+	}
+	
+	public void DeleteLobbyTimers(string lobbyName)
+	{
+		_timers.Remove(lobbyName);
+	}
+	
+	// Others
 	
 	public EventRegistrationTracker EventTracker { get; }
 	public Dictionary<string, ChatNotification> ChannelNotifications { get; }
