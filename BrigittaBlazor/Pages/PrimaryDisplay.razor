@@ -61,7 +61,6 @@
                     <MudPaper Class="pa-2">
                         <LobbyButtonsPanel
                             CurrentLobby="@_currentlySelectedLobby"
-                            @*LobbyTimers reference*@
                             Timers=@StateManager.GetOrCreateTimers(_currentlySelectedLobby.Name) />
                     </MudPaper>
                 </MudItem>
