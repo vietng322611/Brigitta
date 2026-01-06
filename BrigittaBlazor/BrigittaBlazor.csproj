@@ -10,7 +10,10 @@
     <PropertyGroup Condition="'$(Configuration)'=='Release'">
         <PublishSingleFile>true</PublishSingleFile>
         <SelfContained>true</SelfContained>
+        <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
         <PublishReadyToRun>true</PublishReadyToRun>
+        <TrimMode>partial</TrimMode>
+        <PublishTrimmed>false</PublishTrimmed>
     </PropertyGroup>
 
     <ItemGroup>
