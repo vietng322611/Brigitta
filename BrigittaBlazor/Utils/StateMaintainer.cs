@@ -1,5 +1,4 @@
-﻿using BrigittaBlazor.Models;
-using BrigittaBlazor.Settings;
+﻿using BrigittaBlazor.Settings;
 
 namespace BrigittaBlazor.Utils;
 
@@ -62,22 +61,6 @@ public class StateMaintainer
 		{
 			OnAudioAlertDeleted.Invoke(this, audioAlert);
 		}
-	}
-	
-	// Lobby timers state
-
-	private Dictionary<string, LobbyTimers> _timers = new();
-
-	public LobbyTimers GetOrCreateTimers(string lobbyName)
-	{
-		if (!_timers.ContainsKey(lobbyName))
-			_timers.Add(lobbyName, new LobbyTimers());
-		return _timers[lobbyName];
-	}
-	
-	public void DeleteLobbyTimers(string lobbyName)
-	{
-		_timers.Remove(lobbyName);
 	}
 	
 	// Others
