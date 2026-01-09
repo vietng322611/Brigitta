@@ -29,3 +29,9 @@ public class Mappick
             _ => Color.Info
         };
 }
+
+public class Mappool
+{
+    public string TourAbbr { get; set; } = "";
+    public List<Mappick> Mappicks = [];
+}
