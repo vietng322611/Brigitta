@@ -4,6 +4,7 @@
 @using BanchoSharp.Interfaces
 @using BrigittaBlazor.Auth
 @using BrigittaBlazor.Utils
+@using Serilog
 
 @inject IBanchoClient Client
 @inject ILogger<Index> Logger
@@ -164,22 +165,36 @@
         Client.OnAuthenticated += async () => { await brigittaAuth.UpdateAuthenticationStateAsync(Client); };
         Client.OnAuthenticated += async () =>
         {
-            if (!_rememberPassword) return;
-            try
+            var filename = Environment.UserName;
+            if (!_rememberPassword)
             {
-                var encryptedPassword = PasswordUtils.Encrypt(password.Text);
-                var filename = Environment.UserName;
-                await File.WriteAllTextAsync(
-                    filename,
-                    $"{username.Text}|{encryptedPassword}"
-                );
-
-                Logger.LogInformation("Stored credentials in: {Filename}", filename);
+                try
+                {
+                    File.Delete(filename);
+                    Logger.LogInformation("Remove saved credentials");
+                }
+                catch (FileNotFoundException)
+                {
+                    // ignore
+                }
             }
-            catch (Exception e)
+            else
             {
-                Logger.LogError(e, "An error occurred: {ErrorMessage}", e.Message);
-                Snackbar.Add("Unable to save credentials. Continuing without it.", Severity.Error);
+                try
+                {
+                    var encryptedPassword = PasswordUtils.Encrypt(password.Text);
+                    await File.WriteAllTextAsync(
+                        filename,
+                        $"{username.Text}|{encryptedPassword}"
+                    );
+
+                    Logger.LogInformation("Stored credentials into: {Filename}", filename);
+                }
+                catch (Exception e)
+                {
+                    Logger.LogError(e, "An error occurred: {ErrorMessage}", e.Message);
+                    Snackbar.Add("Unable to save credentials. Continuing without it.", Severity.Error);
+                }
             }
         };
         
