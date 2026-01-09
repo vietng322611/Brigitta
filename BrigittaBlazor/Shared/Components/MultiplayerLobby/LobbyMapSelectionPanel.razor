@@ -10,7 +10,7 @@
     <MudItem xs="12">
         <MudChipSet @bind-SelectedChip="_selectedMap">
             <MudGrid Spacing="1" Justify="Justify.Center">
-                @foreach (var group in GetMappickGrouped())
+                @foreach (var group in GetMappicksByAbbreviation())
                 {
                     foreach (var display in group)
                     {
@@ -54,7 +54,7 @@
 
     private MudChip? _selectedMap;
 
-    private IEnumerable<IGrouping<string, Mappick>> GetMappickGrouped()
+    private IEnumerable<IGrouping<string, Mappick>> GetMappicksByAbbreviation()
         => Mappicks.GroupBy(d => d.Abbreviation[..2]);
 
     private async Task DeployMapAsync()
