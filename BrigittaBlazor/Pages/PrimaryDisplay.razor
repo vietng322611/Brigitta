@@ -19,62 +19,83 @@
 @inject NavigationManager NavigationManager
 @inject StateMaintainer StateManager
 
-<MudGrid Spacing="2" Style="margin-top: -50px">
-    <MudItem xs="12" sm="_chatWidthSm" lg="_chatWidthLg">
-        @*Channels, text box*@
-        <MudPaper Class="pa-2">
-            <ChatConsoleHeader @bind-CurrentItem="@_currentlySelectedChannel"
-                               ChannelNotifications="@StateManager.ChannelNotifications"/>
+<MudGrid Spacing="2" Style="margin-top: -110px">
+    <MudItem xs="12" sm="ChatWidthSm" lg="ChatWidthLg">
+        <MudGrid Spacing="1">
+            @*Channels, text box*@
+            <MudItem xs="12">
+                <MudPaper Class="pa-2">
+                    <ChatConsoleHeader @bind-CurrentItem="@_currentlySelectedChannel"
+                                       ChannelNotifications="@StateManager.ChannelNotifications"/>
 
-            <ChatConsole CurrentChannel="@_currentlySelectedChannel"
-                         DisplayTimestamps="@_timestampsInChat"
-                         DisplayUTC="@_displayUTC"
-                         CurrentLobby="@_currentlySelectedLobby"
-                         AutoScroll="@_autoScroll"/>
+                    <ChatConsole CurrentChannel="@_currentlySelectedChannel"
+                                 DisplayTimestamps="@_timestampsInChat"
+                                 DisplayUTC="@_displayUTC"
+                                 CurrentLobby="@CurrentlySelectedLobby"
+                                 AutoScroll="@_autoScroll"/>
 
-            <TextChatEntryField CurrentChannel="@_currentlySelectedChannel"
-                                ConsoleDiv="@_consoleDivId"
-                                AutoScroll="@_autoScroll"
-                                DisplayUTC="@_displayUTC"/>
-        </MudPaper>
-        @*Button row*@
-        <MudPaper Class="pa-2">
-            <ChatIconButtonsPanel CurrentChannel="@_currentlySelectedChannel"
-                                  @bind-AutoScroll="@_autoScroll"
-                                  @bind-DisplayTimestamps="@_timestampsInChat"
-                                  @bind-DisplayUTC="@_displayUTC"/>
-        </MudPaper>
+                    <TextChatEntryField CurrentChannel="@_currentlySelectedChannel"
+                                        ConsoleDiv="@ConsoleDivId"
+                                        AutoScroll="@_autoScroll"
+                                        DisplayUTC="@_displayUTC"/>
+                </MudPaper>
+            </MudItem>
+            
+            @*Button row*@
+            <MudItem xs="12">
+                <MudPaper Class="pa-2">
+                    <ChatIconButtonsPanel CurrentChannel="@_currentlySelectedChannel"
+                                          @bind-AutoScroll="@_autoScroll"
+                                          @bind-DisplayTimestamps="@_timestampsInChat"
+                                          @bind-DisplayUTC="@_displayUTC"
+                                          @bind-ShowModSelection="@_showModSelectionPanel"/>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
     </MudItem>
 
     @*Multiplayer lobby information*@
-    @if (_currentlySelectedLobby != null)
+    @if (CurrentlySelectedLobby != null)
     {
-        // We are inside of a multiplayer lobby channel.
+        // We are inside a multiplayer lobby channel.
         <MudItem xs="12" sm="6" lg="4">
             <MudGrid Spacing="2">
                 <MudItem xs="12">
                     <MudPaper Class="pa-2">
-                        <LobbyInformationPanel CurrentLobby="@_currentlySelectedLobby"/>
+                        <LobbyInformationPanel CurrentLobby="@CurrentlySelectedLobby"/>
                     </MudPaper>
                 </MudItem>
                 <MudItem xs="12">
                     <MudPaper Class="pa-2">
                         <LobbyButtonsPanel
-                            CurrentLobby="@_currentlySelectedLobby"
-                            Timers=@StateManager.GetOrCreateTimers(_currentlySelectedLobby.Name) />
+                            CurrentLobby="@CurrentlySelectedLobby"
+                            Timers=@StateManager.GetOrCreateTimers(CurrentlySelectedLobby.Name) />
                     </MudPaper>
                 </MudItem>
-                <MudItem xs="12">
-                    <MudPaper Class="pa-2">
-                        <LobbyModSelectionPanel CurrentLobby="@_currentlySelectedLobby"/>
-                    </MudPaper>
-                </MudItem>
+                @if (_showModSelectionPanel)
+                {
+                    <MudItem xs="12">
+                        <MudPaper Class="pa-2">
+                            <LobbyModSelectionPanel CurrentLobby="@CurrentlySelectedLobby"/>
+                        </MudPaper>
+                    </MudItem>
+                }
+                else
+                {
+                    <MudItem xs="12">
+                        <MudPaper Class="pa-2">
+                            <LobbyMapSelectionPanel
+                                CurrentLobby="@CurrentlySelectedLobby"
+                                Mappicks="@MappoolUtils.LoadMappool()" />
+                        </MudPaper>
+                    </MudItem>
+                }
             </MudGrid>
         </MudItem>
         <MudItem xs="12">
             <MudPaper>
                 @*Player display*@
-                <LobbyPlayerDisplay CurrentlySelectedLobby="@_currentlySelectedLobby"/>
+                <LobbyPlayerDisplay CurrentlySelectedLobby="@CurrentlySelectedLobby"/>
             </MudPaper>
         </MudItem>
     }
@@ -86,15 +107,17 @@
     private readonly Dictionary<string, Delegate> _eventListeners = new(); // Key: alert's name, Value: the event handler
 
     // ReSharper disable once MergeConditionalExpression -- This actually causes an unhandled exception
-    private IMultiplayerLobby? _currentlySelectedLobby => _currentlySelectedChannel != null ?
+    private IMultiplayerLobby? CurrentlySelectedLobby => _currentlySelectedChannel != null ?
         _currentlySelectedChannel as IMultiplayerLobby :
         null;
+
+    private bool _showModSelectionPanel = true;
     private bool _autoScroll = true;
     private bool _timestampsInChat = true;
     private bool _displayUTC;
-    private string _consoleDivId => "console";
-    private int _chatWidthSm => _currentlySelectedLobby != null ? 6 : 12;
-    private int _chatWidthLg => _currentlySelectedLobby != null ? 8 : 12;
+    private static string ConsoleDivId => "console";
+    private int ChatWidthSm => CurrentlySelectedLobby != null ? 6 : 12;
+    private int ChatWidthLg => CurrentlySelectedLobby != null ? 8 : 12;
 
     protected override async Task OnInitializedAsync()
     {
@@ -102,7 +125,7 @@
         StateManager.OnAudioAlertUpdated += OnAudioAlertUpdated;
         StateManager.OnAudioAlertDeleted += OnAudioAlertDeleted;
 
-    // Reload all of the audio alerts
+    // Reload all audio alerts
         foreach (var alert in StateManager.AudioAlerts)
         {
             SubscribeToAudioEvent(alert);
@@ -441,7 +464,7 @@
                 {
                     await Task.Run(async () =>
                     {
-                        while (lobby.LobbyTimerInProgress && !lobby.IsClosed)
+                        while (lobby is { LobbyTimerInProgress: true, IsClosed: false })
                         {
                             await Task.Delay(1000);
                             await InvokeAsync(StateHasChanged);
@@ -489,11 +512,7 @@
                     return;
                 }
 
-                string[] refKeyWords =
-                {
-                    "ref",
-                    "referee"
-                };
+                string[] refKeyWords = ["ref", "referee"];
 
                 if (priv.Recipient.StartsWith("#mp_"))
                 {

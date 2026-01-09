@@ -50,6 +50,21 @@
                            OnClick="@(DownloadChatHistoryAsync)"/>
         </MudTooltip>
     </MudItem>
+    @if (CurrentChannel is IMultiplayerLobby)
+    {
+        <MudItem>
+            <MudTooltip
+                Text=@(ShowModSelection ? "Show mappick selection panel"
+                         : "Show mods selection panel")>
+                <MudToggleIconButton ToggledChanged="@OnShowModSelectionToggleChanged"
+                                     Toggled="@ShowModSelection"
+                                     Icon="@Icons.Material.Filled.CompareArrows"
+                                     ToggledIcon="@Icons.Material.Filled.CompareArrows"
+                                     ToggledColor="Color.Inherit" Color="Color.Inherit"
+                                     Size="Size.Medium" ToggledSize="Size.Medium"/>
+            </MudTooltip>
+        </MudItem>
+    }
     @if (DebugUtils.IsDebugBuild())
     {
         <MudItem>
@@ -78,6 +93,8 @@
     [Parameter]
     public bool DisplayUTC { get; set; }
     [Parameter]
+    public bool ShowModSelection { get; set; } = true;
+    [Parameter]
     public IChatChannel? CurrentChannel { get; set; }
     [Parameter]
     public EventCallback<bool> AutoScrollChanged { get; set; }
@@ -85,6 +102,9 @@
     public EventCallback<bool> DisplayTimestampsChanged { get; set; }
     [Parameter]
     public EventCallback<bool> DisplayUTCChanged { get; set; }
+    [Parameter]
+    public EventCallback<bool> ShowModSelectionChanged { get; set; }
+    
 
     private void OnAutoScrollToggleChanged(bool isToggled)
     {
@@ -102,6 +122,12 @@
     {
         DisplayUTC = isToggled;
         DisplayUTCChanged.InvokeAsync(DisplayUTC);
+    }
+
+    private void OnShowModSelectionToggleChanged(bool isToggled)
+    {
+        ShowModSelection = isToggled;
+        ShowModSelectionChanged.InvokeAsync(ShowModSelection);
     }
 
     private int _dbg_SimulateMsgCount { get; set; } = 10;
