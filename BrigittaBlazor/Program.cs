@@ -36,6 +36,8 @@ builder.Services.AddScoped<IScrollUtils, ScrollUtils>();
 builder.Services.AddSingleton<EventRegistrationTracker>();
 builder.Services.AddSingleton<StateMaintainer>();
 builder.Services.AddSingleton<UserSettings>();
+// LobbyManager read mappools from UserSettings
+builder.Services.AddSingleton<LobbyManager>();
 
 // Add serilog as the logging provider with file and console sinks
 builder.Services.AddLogging(loggingBuilder => { loggingBuilder.AddSerilog(dispose: true); });
