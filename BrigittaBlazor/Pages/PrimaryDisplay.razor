@@ -3,6 +3,7 @@
 @using BanchoSharp.Interfaces
 @using BanchoSharp.Multiplayer
 @using BrigittaBlazor.Extensions
+@using BrigittaBlazor.Models
 @using BrigittaBlazor.Settings
 @using BrigittaBlazor.Shared.Components
 @using BrigittaBlazor.Shared.Components.MultiplayerLobby
@@ -69,7 +70,7 @@
                     <MudPaper Class="pa-2">
                         <LobbyButtonsPanel
                             CurrentLobby="@CurrentlySelectedLobby"
-                            Timers=@StateManager.GetOrCreateTimers(CurrentlySelectedLobby.Name) />
+                            Timers=@_lobbyManager.GetOrCreateTimers(CurrentlySelectedLobby.Name) />
                     </MudPaper>
                 </MudItem>
                 @if (_showModSelectionPanel)
@@ -82,13 +83,22 @@
                 }
                 else
                 {
-                    <MudItem xs="12">
-                        <MudPaper Class="pa-2">
-                            <LobbyMapSelectionPanel
-                                CurrentLobby="@CurrentlySelectedLobby"
-                                Mappicks="@MappoolUtils.LoadMappool()" />
-                        </MudPaper>
-                    </MudItem>
+                    var mappool = Mappool;
+                    if (mappool != null)
+                    {
+                        <MudItem xs="12">
+                            <MudPaper Class="pa-2">
+                                <LobbyMapSelectionPanel
+                                    CurrentLobby="@CurrentlySelectedLobby"
+                                    Mappicks="@mappool.Mappicks" />
+                            </MudPaper>
+                        </MudItem>
+                    }
+                    else
+                    {
+                        Snackbar.Add($"Tournament's mappool not found: {TourAbbr}", Severity.Error);
+                        _showModSelectionPanel = true;
+                    }
                 }
             </MudGrid>
         </MudItem>
@@ -111,6 +121,10 @@
         _currentlySelectedChannel as IMultiplayerLobby :
         null;
 
+    private readonly LobbyManager _lobbyManager = new();
+    private string TourAbbr => CurrentlySelectedLobby?.Name.Split(":")[0] ?? "";
+    private Mappool? Mappool => _lobbyManager.GetMappool(TourAbbr);
+    
     private bool _showModSelectionPanel = true;
     private bool _autoScroll = true;
     private bool _timestampsInChat = true;
@@ -415,11 +429,11 @@
 
         Client.OnChannelJoined += async channel =>
         {
-            /**
+            /*
             * Because of the way audio alerts work, they need to be reloaded whenever
             * a multiplayer channel is added.
             */
-            if (channel.ChannelName.StartsWith("#mp_"))
+            if (channel is IMultiplayerLobby)
             {
                 foreach (var alert in StateManager.AudioAlerts.ToImmutableList())
                 {
@@ -454,7 +468,7 @@
             lobby.OnClosed += () =>
             {
                 Snackbar.Add($"Lobby closed: {lobby.Name}", Severity.Info);
-                StateManager.DeleteLobbyTimers(lobby.Name);
+                _lobbyManager.DeleteLobbyTimers(lobby.Name);
             };
             lobby.OnStateChanged += async () =>
             {
