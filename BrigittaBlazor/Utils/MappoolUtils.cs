@@ -10,11 +10,7 @@ public static class MappoolUtils
      */
     public static List<Mappick>? LoadMappool(string tourAbbr)
     {
-        throw new NotImplementedException();
-    }
-    
-    public static List<Mappick>? LoadMappool()
-    {
+#if DEBUG
         return
         [
             new Mappick("NM1", 1, 123456),
@@ -32,5 +28,8 @@ public static class MappoolUtils
             new Mappick("FM1", -1, 123456),
             new Mappick("TB", -1, 123456)
         ];
+#endif
+
+        return null;
     }
 }
