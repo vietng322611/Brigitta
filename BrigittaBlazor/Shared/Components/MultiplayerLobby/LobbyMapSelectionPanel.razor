@@ -1,0 +1,83 @@
+﻿@using BanchoSharp.Interfaces
+@using BrigittaBlazor.Models
+@inject IBanchoClient Client
+@inject ISnackbar Snackbar
+
+<MudGrid Spacing="1" Justify="Justify.SpaceAround">
+    <MudItem xs="12">
+        <MudText Align="Align.Center" Typo="Typo.body1">Map Selection</MudText>
+    </MudItem>
+    <MudItem xs="12">
+        <MudChipSet @bind-SelectedChip="_selectedMap">
+            <MudGrid Spacing="1" Justify="Justify.Center">
+                @foreach (var group in GetMappickGrouped())
+                {
+                    foreach (var display in group)
+                    {
+                        <MudItem>
+                            <MudChip Color="@display.GetColor()" Variant="Variant.Text" Value="@display">
+                                @display.Abbreviation
+                            </MudChip>
+                        </MudItem>
+                    }
+                    
+                    <MudItem xs="12">
+                        <MudDivider/>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudChipSet>
+    </MudItem>
+    <MudItem xs="12">
+        <MudGrid Spacing="1" Justify="Justify.SpaceAround">
+            <MudItem>
+                <MudButton Disabled="@(_selectedMap == null)" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Check" OnClick="@DeployMapAsync">
+                    Deploy Map
+                </MudButton>
+            </MudItem>
+            <MudItem>
+                <MudButton Disabled="@(_selectedMap == null)" Color="Color.Error"
+                           StartIcon="@Icons.Material.Filled.ClearAll" OnClick="@ResetPickedMaps">
+                    Reset
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter]
+    public IMultiplayerLobby? CurrentLobby { get; set; }
+    [Parameter]
+    public List<Mappick> Mappicks { get; set; } = [];
+
+    private MudChip? _selectedMap;
+
+    private IEnumerable<IGrouping<string, Mappick>> GetMappickGrouped()
+        => Mappicks.GroupBy(d => d.Abbreviation[..2]);
+
+    private async Task DeployMapAsync()
+    {
+        if (_selectedMap?.Value is not Mappick mappick)
+        {
+            Snackbar.Add("Failed to deploy map, this button isn't bounded to any map", Severity.Error);
+            return;
+        }
+        _selectedMap = null;
+        
+        var setModsCommand = "!mp mods " + (mappick.ModComb == -1 ? "freemod" : mappick.ModComb);
+        var setMapCommand = "!mp map " + mappick.MapId;
+        
+        if (CurrentLobby == null)
+        {
+            Snackbar.Add("Failed to deploy map, no lobby selected", Severity.Error);
+            return;
+        }
+
+        await Client.SendPrivateMessageAsync(CurrentLobby.ChannelName, setModsCommand);
+        await Client.SendPrivateMessageAsync(CurrentLobby.ChannelName, setMapCommand);
+    }
+
+    private void ResetPickedMaps() => _selectedMap = null;
+}
